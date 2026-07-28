@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本番運用抽選システム</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f6f8; margin: 0; padding: 20px; text-align: center; }
+    .card { max-width: 400px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    input { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+    button { width: 100%; padding: 12px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    button.admin-btn { background: #8b5cf6; }
+    .error { color: #e11d48; margin-top: 10px; font-size: 14px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div id="login-view" class="card">
+    <h2>システムログイン</h2>
+    <input type="text" id="username" placeholder="ユーザー名 (admin / user)">
+    <input type="password" id="password" placeholder="パスワード">
+    <input type="password" id="passphrase" placeholder="合言葉 (202607)">
+    <button onclick="handleLogin()">ログイン</button>
+    <p id="error-msg" class="error"></p>
+  </div>
+
+  <div id="app-view" class="card hidden">
+    <h2 id="welcome-msg">ようこそ！</h2>
+    <p>抽選システム本番バージョンです。</p>
+    <button id="admin-panel-btn" class="admin-btn hidden">ユーザー管理 (管理者限定)</button>
+    <button onclick="handleLogout()" style="background:#64748b; margin-top:20px;">ログアウト</button>
+  </div>
+
+  <script>
+    async function handleLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const passphrase = document.getElementById('passphrase').value;
+      const errorMsg = document.getElementById('error-msg');
+
+      errorMsg.textContent = '';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'json' },
+          body: JSON.stringify({ username, password, passphrase })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          document.getElementById('login-view').classList.add('hidden');
+          document.getElementById('app-view').classList.remove('hidden');
+          document.getElementById('welcome-msg').textContent = `ようこそ (${data.role}) 様`;
+
+          if (data.role === 'admin') {
+            document.getElementById('admin-panel-btn').classList.remove('hidden');
+          }
+        } else {
+          errorMsg.textContent = data.message || 'ログインに失敗しました。';
+        }
+      } catch (err) {
+        errorMsg.textContent = '通信エラーが発生しました。';
+      }
+    }
+
+    function handleLogout() {
+      location.reload();
+    }
+  </script>
+</body>
+</html>
